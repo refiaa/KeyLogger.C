@@ -1,25 +1,21 @@
-CC = gcc
-CFLAGS = -Wall -Wextra -Iinclude
+CC=gcc
+CFLAGS=-I./include -Wall
+SRCDIR=src
+OBJDIR=obj
+BINDIR=bin
 
-SRC_DIR = src
-OBJ_DIR = obj
-BIN_DIR = bin
+SOURCES=$(wildcard $(SRCDIR)/*.c)
+OBJECTS=$(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SOURCES))
+TARGET=$(BINDIR)/keylogger.exe
 
-SRCS = $(wildcard $(SRC_DIR)/*.c) main.c
-OBJS = $(patsubst %.c, $(OBJ_DIR)/%.o, $(SRCS))
+$(TARGET): $(OBJECTS)
+    @mkdir -p $(BINDIR)
+    $(CC) $^ -o $@ -luser32
 
-TARGET = keylogger_test
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+    @mkdir -p $(OBJDIR)
+    $(CC) $(CFLAGS) -c $< -o $@
 
-.PHONY: all clean
-
-all: $(TARGET)
-
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^
-
-$(OBJ_DIR)/%.o: %.c
-	@mkdir -p $(OBJ_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
-
+.PHONY: clean
 clean:
-	rm -rf $(OBJ_DIR) $(TARGET)
+    rm -rf $(OBJDIR) $(BINDIR)

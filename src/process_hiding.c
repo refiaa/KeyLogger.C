@@ -5,11 +5,6 @@
 #include <psapi.h>
 #include <winternl.h>
 
-struct ProcessHider {
-    BOOL (*hide_process)(ProcessHider*, DWORD);
-    BOOL (*unhide_process)(ProcessHider*, DWORD);
-};
-
 typedef NTSTATUS (NTAPI *PNtSetInformationProcess)(
     HANDLE ProcessHandle,
     PROCESSINFOCLASS ProcessInformationClass,

